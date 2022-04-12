@@ -15,3 +15,5 @@
 ## References
 
 - [WEMOS LOLIN32](https://docs.platformio.org/en/latest/boards/espressif32/lolin32.html)
+- [ESP32 Hardware Serial2 Example](https://circuits4you.com/2018/12/31/esp32-hardware-serial2-example/)
+- [GPIO Matrix and Pin Mux](https://espressif-docs.readthedocs-hosted.com/projects/arduino-esp32/en/latest/tutorials/io_mux.html)
