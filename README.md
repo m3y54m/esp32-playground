@@ -1,5 +1,7 @@
 # Arduino + ESP32
 
+In this project I used both the capabilities of the Arduino and ESP-IDF with FreeRTOS.
+
 ## PlatformIO Project Configuration
 
 - Platform: WEMOS LOLIN32
@@ -25,10 +27,14 @@ Add a small delay (10ms) to infinite loops to prevent `Task watchdog got trigger
 
 - [Task watchdog got triggered - it is fixed with a vTaskDelay of 10ms but is this a bug? (IDFGH-5818) #1646](https://github.com/espressif/esp-idf/issues/1646)
 
-## Debugging
+### Debugging
 
 Debugging feature of PlatformIO for Esp32 is buggy. But if you set the framework to Arduino, you can have a bit better
 debugging experience than ESP-IDF framework.
+
+### Get rid of Arduino setup() and loop()
+
+Just start your program from `extern "C" void app_main(void)` instead of `void setup()` and `void loop()`.
 
 ## References
 
