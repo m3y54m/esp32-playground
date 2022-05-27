@@ -1,24 +1,26 @@
-#include <Arduino.h>
+#include <driver/gpio.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
 
-// GPIO Matrix will be used to assign any IO pin
-// to the desired UART peripheral
-#define MUXED_RXD 36
-#define MUXED_TXD 32
+static const gpio_num_t led_pin = GPIO_NUM_5; // LED connected to GPIO5 (On-board LED)
 
-void setup()
+void setup(void)
 {
-  // Note the format for setting a serial port is as follows: Serial2.begin(baud-rate, protocol, RX pin, TX pin);
-  Serial.begin(9600);
-  // Serial1.begin(9600, SERIAL_8N1, MUXED_RXD, MUXED_TXD);
-  Serial2.begin(9600, SERIAL_8N1, MUXED_RXD, MUXED_TXD);
-  Serial.println("Serial2 Txd is on pin: " + String(MUXED_TXD));
-  Serial.println("Serial2 Rxd is on pin: " + String(MUXED_RXD));
+  // Configure pin
+  gpio_config_t io_conf;
+  io_conf.intr_type = GPIO_INTR_DISABLE;
+  io_conf.mode = GPIO_MODE_OUTPUT;
+  io_conf.pin_bit_mask = (1ULL << led_pin);
+  io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
+  io_conf.pull_up_en = GPIO_PULLUP_DISABLE;
+  gpio_config(&io_conf);
 }
 
-void loop()
+// Main loop
+void loop(void)
 {
-  // Create a loopback on Serial2
-  while (Serial2.available()) {
-    Serial2.print(char(Serial2.read()));
-  }
+  gpio_set_level(led_pin, 0);
+  vTaskDelay(1000 / portTICK_RATE_MS);
+  gpio_set_level(led_pin, 1);
+  vTaskDelay(1000 / portTICK_RATE_MS);
 }
