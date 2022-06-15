@@ -9,6 +9,9 @@ In this project I used both the capabilities of the Arduino and ESP-IDF with Fre
 - Upload Method:
   - esptool (Default)
   - jlink
+  - esp-prog (Based on FT2232H or FT232H)
+- Debug Method:
+  - esp-prog (Based on FT2232H or FT232H)
 
 
 ## Board Pinout
@@ -31,6 +34,26 @@ Add a small delay (10ms) to infinite loops to prevent `Task watchdog got trigger
 
 Debugging feature of PlatformIO for Esp32 is buggy. But if you set the framework to Arduino, you can have a bit better
 debugging experience than ESP-IDF framework.
+
+The hardware used for debugging ESP32 is an FT232H USB-JTAG adapter:
+
+![](assets/ft232h.jpg)
+
+Connect ESP32 to FT232H USB-JTAG adapter according to the following table:
+
+| ESP32  | FT232H    |
+| ------ | --------- |
+| GPIO12 | AD1 (TDI) |
+| GPIO13 | AD0 (TCK) |
+| GPIO14 | AD3 (TMS) |
+| GPIO15 | AD2 (TDO) |
+| GND    | GND       |
+
+For more information, read the following articles:
+
+- [Low-cost ESP32 In-circuit Debugging](https://medium.com/@manuel.bl/low-cost-esp32-in-circuit-debugging-dbbee39e508b)
+- [ESP32 JTAG debugging](https://nodemcu.readthedocs.io/en/dev-esp32/debug/)
+
 
 ### Get rid of Arduino setup() and loop()
 
