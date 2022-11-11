@@ -3,7 +3,7 @@
 #include <freertos/task.h>
 
 // LED pins
-static const gpio_num_t led_pin = GPIO_NUM_5; // LED connected to GPIO5 (On-board LED)
+static const gpio_num_t led_onboard = GPIO_NUM_5; // LED connected to GPIO5 (On-board LED)
 static const gpio_num_t led_red = GPIO_NUM_19;
 static const gpio_num_t led_green = GPIO_NUM_23;
 static const gpio_num_t led_blue = GPIO_NUM_18;
@@ -45,7 +45,7 @@ void vTaskLedOnBoard(void *pvParameters)
 {
   while (1)
   {
-    my_led_blink_fast(led_pin);
+    my_led_blink_fast(led_onboard);
   }
 }
 
@@ -73,10 +73,10 @@ void vTaskLedBlue(void *pvParameters)
   }
 }
 
-extern "C" void app_main(void)
+void app_main(void)
 {
   // Configure pin
-  my_config_led_pin(led_pin);
+  my_config_led_pin(led_onboard);
   my_config_led_pin(led_red);
   my_config_led_pin(led_green);
   my_config_led_pin(led_blue);
@@ -127,6 +127,8 @@ extern "C" void app_main(void)
 
   while (1)
   {
+    printf("Hello world!\n");
+
     // Suspend the higher priority task for some intervals
     for (int i = 0; i < 3; i++)
     {
