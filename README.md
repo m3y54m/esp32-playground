@@ -72,3 +72,4 @@ Just start your program from `extern "C" void app_main(void)` instead of `void s
 - [UART Echo Example](https://github.com/espressif/esp-idf/tree/master/examples/peripherals/uart/uart_echo)
 - [Hello World with ESP32 Explained](https://exploreembedded.com/wiki/Hello_World_with_ESP32_Explained)
 - [ESP-IDF for PlatformIO](https://docs.platformio.org/en/stable/frameworks/espidf.html)
+- [ESP32 UART Communication using ESP-IDF](https://esp32tutorials.com/esp32-uart-tutorial-esp-idf/)
