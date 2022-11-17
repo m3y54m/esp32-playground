@@ -59,6 +59,14 @@ For more information, read the following articles:
 
 Just start your program from `extern "C" void app_main(void)` instead of `void setup()` and `void loop()`.
 
+### Run `menuconfig` in PlatformIO
+
+```console
+pio run -t menuconfig
+```
+
+    Note: Use `J` and `K` instead of up and down arrow keys to move between items in `menuconfig`
+
 ## References
 
 - [WEMOS LOLIN32](https://docs.platformio.org/en/latest/boards/espressif32/lolin32.html)
