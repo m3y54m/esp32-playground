@@ -4,6 +4,9 @@
     "*.ipp": "c",
     "cstring": "c",
     "string.h": "c",
-    "uart.h": "c"
+    "uart.h": "c",
+    "atomic": "c",
+    "cstdint": "c",
+    "esp_log.h": "c"
   }
 }

@@ -3,26 +3,28 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <string.h>
-#include <stdlib.h>
 #define LOG_LOCAL_LEVEL ESP_LOG_VERBOSE
 #include <esp_log.h>
 
 // Pins
-static const gpio_num_t led_pin = GPIO_NUM_5; // LED connected to GPIO5 (On-board LED)
-static const gpio_num_t uart1_tx_pin = GPIO_NUM_17;
-static const gpio_num_t uart1_rx_pin = GPIO_NUM_16;
+const gpio_num_t led_pin = GPIO_NUM_5; // LED connected to GPIO5 (On-board LED)
+const gpio_num_t uart1_tx_pin = GPIO_NUM_17;
+const gpio_num_t uart1_rx_pin = GPIO_NUM_16;
 
 // Settings
-static const uint8_t buf_len = 20;
+const uint8_t str_buf_len = 20;
 
 // Globals
-static int led_delay = 500; // ms
+uint16_t led_delay = 500;           // ms
+volatile bool message_received = 0; // volatile keyword prevents variable from being optimized by compiler
+char *message_buffer = NULL;
 
 // Task handles
-static TaskHandle_t TaskHandle_Led = NULL;
-static TaskHandle_t TaskHandle_Uart1 = NULL;
+TaskHandle_t TaskHandle_Led = NULL;
+TaskHandle_t TaskHandle_Uart1 = NULL;
+TaskHandle_t TaskHandle_Uart0 = NULL;
 
-void vMyConfigLedPin(gpio_num_t gpio_num)
+void vMyLedConfig(gpio_num_t gpio_num)
 {
   gpio_config_t io_conf = {
       .pin_bit_mask = (1ULL << gpio_num),
@@ -54,45 +56,92 @@ void vMyTaskLed(void *pvParameters)
 
 void vMyTaskUart1(void *pvParameters)
 {
-  char data;
-  char buf[buf_len];
-  uint8_t idx = 0;
+  char str_buffer[str_buf_len];
+  char received_byte;
+  uint8_t received_byte_index = 0;
 
   // Clear whole buffer
-  memset(buf, 0, buf_len);
+  memset(str_buffer, 0, str_buf_len);
 
   while (1)
   {
     // Read characters from serial
     int uart_rx_available_bytes = 0;
-    uart_get_buffered_data_len(UART_NUM_0, (size_t *)&uart_rx_available_bytes);
+    uart_get_buffered_data_len(UART_NUM_1, (size_t *)&uart_rx_available_bytes);
 
     if (uart_rx_available_bytes > 0)
     {
-      uart_rx_available_bytes = uart_read_bytes(UART_NUM_0, &data, 1, pdMS_TO_TICKS(100));
+      uart_rx_available_bytes = uart_read_bytes(UART_NUM_1, &received_byte, 1, pdMS_TO_TICKS(100));
+      printf("Task A: Received byte: 0x%02X -> %c\r\n", received_byte, received_byte);
 
       // Update delay variable and reset buffer if we get a newline character
-      if (data == '\n')
+      if (received_byte == '\n')
       {
-        led_delay = atoi(buf);
-        printf("Updated LED delay to: \n");
-        printf("%d\n", led_delay);
-        memset(buf, 0, buf_len);
-        idx = 0;
+        uint8_t msg_buf_len = strlen(str_buffer) + 1;
+        printf("Task A: String received from UART1: %s\r\n", str_buffer);
+
+        if (message_received == 0)
+        {
+          ESP_LOGI("Task A", "Minimum amount of remaining stack space (in words): %d", uxTaskGetStackHighWaterMark(NULL));
+          ESP_LOGI("Task A", "Free heap space (in bytes): %d", xPortGetFreeHeapSize());
+
+          message_buffer = pvPortMalloc(msg_buf_len);
+          if (message_buffer == NULL)
+          {
+            printf("Task A: Not enough memory\r\n");
+          }
+          else
+          {
+            memcpy(message_buffer, str_buffer, msg_buf_len);
+            printf("Task A: Filled message buffer with: %s\r\n", message_buffer);
+            message_received = 1;
+          }
+
+          ESP_LOGI("Task A", "Minimum amount of remaining stack space (in words): %d", uxTaskGetStackHighWaterMark(NULL));
+          ESP_LOGI("Task A", "Free heap space (in bytes): %d", xPortGetFreeHeapSize());
+        }
+
+        memset(str_buffer, 0, str_buf_len);
+        received_byte_index = 0;
       }
       else
       {
-        // Only append if index is not over message limit
-        if (idx < buf_len - 1)
+        // Only append if received_byte_index is not over message limit
+        if (received_byte_index < str_buf_len - 1)
         {
-          buf[idx] = data;
-          idx++;
+          str_buffer[received_byte_index] = received_byte;
+          received_byte_index++;
         }
       }
     }
 
-    // ESP_LOGI("UART1", "Minimum amount of remaining stack space (in words): %d", uxTaskGetStackHighWaterMark(NULL));
-    // ESP_LOGI("UART1", "Free heap space (in bytes): %d", xPortGetFreeHeapSize());
+    // This delay is necessary to prevent overflowing of task watchdog timer
+    vTaskDelay(pdMS_TO_TICKS(10));
+  }
+}
+
+void vMyTaskUart0(void *pvParameters)
+{
+  while (1)
+  {
+    if (message_received == 1)
+    {
+      if (message_buffer != NULL)
+      {
+        ESP_LOGI("Task B", "Minimum amount of remaining stack space (in words): %d", uxTaskGetStackHighWaterMark(NULL));
+        ESP_LOGI("Task B", "Free heap space (in bytes): %d", xPortGetFreeHeapSize());
+
+        printf("Task B: Message received: %s\r\n", message_buffer);
+        vPortFree(message_buffer);
+        message_buffer = NULL;
+        printf("Task B: Freed message buffer\r\n");
+
+        ESP_LOGI("Task B", "Minimum amount of remaining stack space (in words): %d", uxTaskGetStackHighWaterMark(NULL));
+        ESP_LOGI("Task B", "Free heap space (in bytes): %d", xPortGetFreeHeapSize());
+      }
+
+      message_received = 0;
+    }
 
     // This delay is necessary to prevent overflowing of task watchdog timer
     vTaskDelay(pdMS_TO_TICKS(10));
@@ -104,7 +153,7 @@ void vMyTaskUart1(void *pvParameters)
 void app_main(void)
 {
   // Configure LED pin
-  vMyConfigLedPin(led_pin);
+  vMyLedConfig(led_pin);
 
   // Configure UART
   uart_config_t uart_config = {
@@ -115,23 +164,20 @@ void app_main(void)
       .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
       .source_clk = UART_SCLK_APB,
   };
-  uart_driver_delete(UART_NUM_0);
-  uart_driver_install(UART_NUM_0, 2048, 0, 0, NULL, 0);
-  uart_param_config(UART_NUM_0, &uart_config);
-  uart_set_pin(UART_NUM_0, uart1_tx_pin, uart1_rx_pin, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+  uart_driver_install(UART_NUM_1, 2048, 0, 0, NULL, 0);
+  uart_param_config(UART_NUM_1, &uart_config);
+  uart_set_pin(UART_NUM_1, uart1_tx_pin, uart1_rx_pin, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
 
   vTaskDelay(pdMS_TO_TICKS(1000));
-  char * str = "Multi-task LED Demo\r\n";
-  uart_write_bytes(UART_NUM_0, str, strlen(str));
-  printf("Enter a number in milliseconds to change the LED delay.\n");
+  printf("Enter a message to UART1 (TX=17, RX=16):\r\n");
 
   // Create tasks
   xTaskCreate(
       vMyTaskLed,     // Task handler function
       "vMyTaskLed",   // Task name (used for debugging)
-      1024,                  // Stack depth of this task (in words)
-      NULL,                  // Parameters passed to task handler function
-      1,                     // Task priority
+      1024,           // Stack depth of this task (in words)
+      NULL,           // Parameters passed to task handler function
+      1,              // Task priority
       &TaskHandle_Led // TaskHandle_t reference variable of this task (used for changing priority or delete task in program)
   );
 
@@ -142,6 +188,15 @@ void app_main(void)
       NULL,             // Parameters passed to task handler function
       1,                // Task priority
       &TaskHandle_Uart1 // TaskHandle_t reference variable of this task (used for changing priority or delete task in program)
+  );
+
+  xTaskCreate(
+      vMyTaskUart0,     // Task handler function
+      "vMyTaskUart0",   // Task name (used for debugging)
+      3000,             // Stack depth of this task (in words)
+      NULL,             // Parameters passed to task handler function
+      1,                // Task priority
+      &TaskHandle_Uart0 // TaskHandle_t reference variable of this task (used for changing priority or delete task in program)
   );
 
   // Start the scheduler so the tasks start executing
