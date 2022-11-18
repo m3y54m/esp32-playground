@@ -30,6 +30,10 @@ Add a small delay (10ms) to infinite loops to prevent `Task watchdog got trigger
 
 - [Task watchdog got triggered - it is fixed with a vTaskDelay of 10ms but is this a bug? (IDFGH-5818) #1646](https://github.com/espressif/esp-idf/issues/1646)
 
+Or you can set priority of all tasks to 0 (Idle). 
+
+- [Task watchdog got triggered - The tasks did not reset the watchdog in time](https://stackoverflow.com/questions/66278271/task-watchdog-got-triggered-the-tasks-did-not-reset-the-watchdog-in-time)
+
 ### Debugging
 
 Debugging feature of PlatformIO for Esp32 is buggy. But if you set the framework to Arduino, you can have a bit better
@@ -53,7 +57,6 @@ For more information, read the following articles:
 
 - [Low-cost ESP32 In-circuit Debugging](https://medium.com/@manuel.bl/low-cost-esp32-in-circuit-debugging-dbbee39e508b)
 - [ESP32 JTAG debugging](https://nodemcu.readthedocs.io/en/dev-esp32/debug/)
-
 
 ### Get rid of Arduino setup() and loop()
 
@@ -81,3 +84,4 @@ pio run -t menuconfig
 - [Hello World with ESP32 Explained](https://exploreembedded.com/wiki/Hello_World_with_ESP32_Explained)
 - [ESP-IDF for PlatformIO](https://docs.platformio.org/en/stable/frameworks/espidf.html)
 - [ESP32 UART Communication using ESP-IDF](https://esp32tutorials.com/esp32-uart-tutorial-esp-idf/)
+- [uxTaskGetStackHighWaterMark](https://www.freertos.org/uxTaskGetStackHighWaterMark.html)

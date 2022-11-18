@@ -3,6 +3,7 @@
     "task.h": "c",
     "*.ipp": "c",
     "cstring": "c",
-    "string.h": "c"
+    "string.h": "c",
+    "uart.h": "c"
   }
 }
