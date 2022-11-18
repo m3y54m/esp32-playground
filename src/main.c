@@ -8,7 +8,9 @@
 #include <esp_log.h>
 
 // Pins
-static const gpio_num_t led_onboard_pin = GPIO_NUM_5; // LED connected to GPIO5 (On-board LED)
+static const gpio_num_t led_pin = GPIO_NUM_5; // LED connected to GPIO5 (On-board LED)
+static const gpio_num_t uart1_tx_pin = GPIO_NUM_17;
+static const gpio_num_t uart1_rx_pin = GPIO_NUM_16;
 
 // Settings
 static const uint8_t buf_len = 20;
@@ -17,18 +19,18 @@ static const uint8_t buf_len = 20;
 static int led_delay = 500; // ms
 
 // Task handles
-static TaskHandle_t TaskHandle_LedOnBoard = NULL;
+static TaskHandle_t TaskHandle_Led = NULL;
 static TaskHandle_t TaskHandle_Uart1 = NULL;
 
 void vMyConfigLedPin(gpio_num_t gpio_num)
 {
   gpio_config_t io_conf = {
-      .intr_type = GPIO_INTR_DISABLE,
+      .pin_bit_mask = (1ULL << gpio_num),
       .mode = GPIO_MODE_OUTPUT,
-      .pull_down_en = GPIO_PULLDOWN_DISABLE,
       .pull_up_en = GPIO_PULLUP_DISABLE,
+      .pull_down_en = GPIO_PULLDOWN_DISABLE,
+      .intr_type = GPIO_INTR_DISABLE,
   };
-  io_conf.pin_bit_mask = (1ULL << gpio_num);
   gpio_config(&io_conf);
 }
 
@@ -42,11 +44,11 @@ void vMyLedBlink(gpio_num_t gpio_num, uint32_t delay_ms)
 
 //************ Tasks ************
 
-void vMyTaskLedOnBoard(void *pvParameters)
+void vMyTaskLed(void *pvParameters)
 {
   while (1)
   {
-    vMyLedBlink(led_onboard_pin, led_delay);
+    vMyLedBlink(led_pin, led_delay);
   }
 }
 
@@ -63,11 +65,11 @@ void vMyTaskUart1(void *pvParameters)
   {
     // Read characters from serial
     int uart_rx_available_bytes = 0;
-    uart_get_buffered_data_len(UART_NUM_1, (size_t *)&uart_rx_available_bytes);
+    uart_get_buffered_data_len(UART_NUM_0, (size_t *)&uart_rx_available_bytes);
 
     if (uart_rx_available_bytes > 0)
     {
-      uart_rx_available_bytes = uart_read_bytes(UART_NUM_1, &data, 1, pdMS_TO_TICKS(100));
+      uart_rx_available_bytes = uart_read_bytes(UART_NUM_0, &data, 1, pdMS_TO_TICKS(100));
 
       // Update delay variable and reset buffer if we get a newline character
       if (data == '\n')
@@ -102,7 +104,7 @@ void vMyTaskUart1(void *pvParameters)
 void app_main(void)
 {
   // Configure LED pin
-  vMyConfigLedPin(led_onboard_pin);
+  vMyConfigLedPin(led_pin);
 
   // Configure UART
   uart_config_t uart_config = {
@@ -113,22 +115,24 @@ void app_main(void)
       .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
       .source_clk = UART_SCLK_APB,
   };
-  uart_driver_install(UART_NUM_1, 2048, 0, 0, NULL, 0);
-  uart_param_config(UART_NUM_1, &uart_config);
-  uart_set_pin(UART_NUM_1, 17, 16, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+  uart_driver_delete(UART_NUM_0);
+  uart_driver_install(UART_NUM_0, 2048, 0, 0, NULL, 0);
+  uart_param_config(UART_NUM_0, &uart_config);
+  uart_set_pin(UART_NUM_0, uart1_tx_pin, uart1_rx_pin, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
 
   vTaskDelay(pdMS_TO_TICKS(1000));
-  printf("Multi-task LED Demo\n");
+  char * str = "Multi-task LED Demo\r\n";
+  uart_write_bytes(UART_NUM_0, str, strlen(str));
   printf("Enter a number in milliseconds to change the LED delay.\n");
 
   // Create tasks
   xTaskCreate(
-      vMyTaskLedOnBoard,     // Task handler function
-      "vMyTaskLedOnBoard",   // Task name (used for debugging)
+      vMyTaskLed,     // Task handler function
+      "vMyTaskLed",   // Task name (used for debugging)
       1024,                  // Stack depth of this task (in words)
       NULL,                  // Parameters passed to task handler function
       1,                     // Task priority
-      &TaskHandle_LedOnBoard // TaskHandle_t reference variable of this task (used for changing priority or delete task in program)
+      &TaskHandle_Led // TaskHandle_t reference variable of this task (used for changing priority or delete task in program)
   );
 
   xTaskCreate(

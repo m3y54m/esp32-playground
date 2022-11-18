@@ -85,3 +85,4 @@ pio run -t menuconfig
 - [ESP-IDF for PlatformIO](https://docs.platformio.org/en/stable/frameworks/espidf.html)
 - [ESP32 UART Communication using ESP-IDF](https://esp32tutorials.com/esp32-uart-tutorial-esp-idf/)
 - [uxTaskGetStackHighWaterMark](https://www.freertos.org/uxTaskGetStackHighWaterMark.html)
+- [Stop boot rom logs , panic handler logs on UART 0 on Esp-Wroom-32](https://github.com/espressif/esp-idf/issues/4836)
