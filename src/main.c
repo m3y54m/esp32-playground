@@ -19,7 +19,7 @@ SemaphoreHandle_t mutex;
 
 //************ Tasks ************
 
-void vMyTaskA(void *pvParameters)
+void vMyTask(void *pvParameters)
 {
   while (1)
   {
@@ -27,37 +27,14 @@ void vMyTaskA(void *pvParameters)
     if (xSemaphoreTake(mutex, 10) == pdTRUE) // 10 ticks timeout is necessary
     {
       uint16_t local_var = shared_var;
-      vTaskDelay(pdMS_TO_TICKS(1000)); // Critical section
+      uint16_t random_delay = (uint16_t)(esp_random() >> 21) + 256; // random delay in range 256 ~ 2304
+      vTaskDelay(pdMS_TO_TICKS(random_delay)); // Critical section
       shared_var = ++local_var;
+
+      printf("%s: delay = %u, shared_var = %u\r\n", pcTaskGetName(NULL), random_delay, shared_var);
 
       // Give mutex after critical section
       xSemaphoreGive(mutex);
-
-      printf("Task A: shared_var = %d\r\n", shared_var);
-    }
-    else
-    {
-      // Do something else if you can't obtain the mutex
-      vTaskDelay(pdMS_TO_TICKS(10)); // To prevent watchdog reset while waiting for mutex
-    }
-  }
-}
-
-void vMyTaskB(void *pvParameters)
-{
-  while (1)
-  {
-    // Take mutex prior to critical section
-    if (xSemaphoreTake(mutex, 10) == pdTRUE) // 10 ticks timeout is necessary
-    {
-      uint16_t local_var = shared_var;
-      vTaskDelay(pdMS_TO_TICKS(500)); // Critical section
-      shared_var = ++local_var;
-
-      // Give mutex after critical section
-      xSemaphoreGive(mutex);
-
-      printf("Task B: shared_var = %d\r\n", shared_var);
     }
     else
     {
@@ -79,8 +56,8 @@ void app_main(void)
 
   // Create tasks
   xTaskCreate(
-      vMyTaskA,   // Task handler function
-      "vMyTaskA", // Task name (used for debugging)
+      vMyTask,   // Task handler function
+      "Task A", // Task name (used for debugging)
       3000,       // Stack depth of this task (in words)
       NULL,       // Parameters passed to task handler function
       1,          // Task priority
@@ -88,8 +65,8 @@ void app_main(void)
   );
 
   xTaskCreate(
-      vMyTaskB,   // Task handler function
-      "vMyTaskB", // Task name (used for debugging)
+      vMyTask,   // Task handler function
+      "Task B", // Task name (used for debugging)
       3000,       // Stack depth of this task (in words)
       NULL,       // Parameters passed to task handler function
       1,          // Task priority
