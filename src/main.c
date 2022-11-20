@@ -27,12 +27,13 @@ void vMyTask(void *pvParameters)
     if (xSemaphoreTake(mutex, 10) == pdTRUE) // 10 ticks timeout is necessary
     {
       uint16_t local_var = shared_var;
-      uint16_t random_delay = (uint16_t)(esp_random() >> 21) + 256; // random delay in range 256 ~ 2304
-      vTaskDelay(pdMS_TO_TICKS(random_delay)); // Critical section
-      shared_var = ++local_var;
+      uint16_t random_delay = ((uint16_t)(esp_random() & 0x01) * 900) + 100; // random delay (100 or 1000)
 
       printf("%s: delay = %u, shared_var = %u\r\n", pcTaskGetName(NULL), random_delay, shared_var);
 
+      vTaskDelay(pdMS_TO_TICKS(random_delay)); // Critical section
+      shared_var = ++local_var;
+      
       // Give mutex after critical section
       xSemaphoreGive(mutex);
     }
