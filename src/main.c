@@ -13,16 +13,32 @@ uint16_t shared_var;
 TaskHandle_t task_a = NULL;
 TaskHandle_t task_b = NULL;
 
+// Semaphore handles
+SemaphoreHandle_t mutex;
+
 //************ Tasks ************
 
 void vMyTaskA(void *pvParameters)
 {
   while (1)
   {
-    uint16_t local_var = shared_var;
-    vTaskDelay(pdMS_TO_TICKS(500)); // Critical section
-    shared_var = ++local_var;
-    printf("Task A: shared_var = %d\r\n", shared_var);
+    // Take mutex prior to critical section
+    if (xSemaphoreTake(mutex, 0) == pdTRUE)
+    {
+      uint16_t local_var = shared_var;
+      vTaskDelay(pdMS_TO_TICKS(500)); // Critical section
+      shared_var = ++local_var;
+
+      // Give mutex after critical section
+      xSemaphoreGive(mutex);
+
+      printf("Task A: shared_var = %d\r\n", shared_var);
+    }
+    else
+    {
+      // Do something else if you can't obtain the mutex
+      vTaskDelay(pdMS_TO_TICKS(10));  // To prevent watchdog reset while waiting for mutex
+    }
   }
 }
 
@@ -30,10 +46,23 @@ void vMyTaskB(void *pvParameters)
 {
   while (1)
   {
-    uint16_t local_var = shared_var;
-    vTaskDelay(pdMS_TO_TICKS(1000)); // Critical section
-    shared_var = ++local_var;
-    printf("Task B: shared_var = %d\r\n", shared_var);
+    // Take mutex prior to critical section
+    if (xSemaphoreTake(mutex, 0) == pdTRUE)
+    {
+      uint16_t local_var = shared_var;
+      vTaskDelay(pdMS_TO_TICKS(500)); // Critical section
+      shared_var = ++local_var;
+
+      // Give mutex after critical section
+      xSemaphoreGive(mutex);
+
+      printf("Task B: shared_var = %d\r\n", shared_var);
+    }
+    else
+    {
+      // Do something else if you can't obtain the mutex
+      vTaskDelay(pdMS_TO_TICKS(10)); // To prevent watchdog reset while waiting for mutex
+    }
   }
 }
 
@@ -43,6 +72,9 @@ void app_main(void)
 {
   vTaskDelay(pdMS_TO_TICKS(1000));
   printf("--- FreeRTOS Race Condition Demo ---\r\n");
+
+  // Create mutex before starting tasks
+  mutex = xSemaphoreCreateMutex();
 
   // Create tasks
   xTaskCreate(

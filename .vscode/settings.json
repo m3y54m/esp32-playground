@@ -7,6 +7,7 @@
     "uart.h": "c",
     "atomic": "c",
     "cstdint": "c",
-    "esp_log.h": "c"
+    "esp_log.h": "c",
+    "freertos.h": "c"
   }
 }
