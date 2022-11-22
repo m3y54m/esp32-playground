@@ -91,3 +91,4 @@ pio run -t menuconfig
 - [How To Track Orientation with Arduino and ADXL345 Accelerometer](https://howtomechatronics.com/tutorials/arduino/how-to-track-orientation-with-arduino-and-adxl345-accelerometer/)
 - [esp32-i2c-adxl345](https://github.com/imxieyi/esp32-i2c-adxl345)
 - [ESP-IDF components](https://docs.platformio.org/en/latest/frameworks/espidf.html#esp-idf-components)
+- [Measuring analog inputs with ESP32 ADC (ESP-IDF)](https://embeddedexplorer.com/esp32-adc-esp-idf-tutorial/)
