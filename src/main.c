@@ -8,10 +8,9 @@
 #include <esp_log.h>
 #include <freertos/semphr.h>
 
-#define bitRead(value, bit) (((value) >> (bit)) & 0x01)
-#define bitSet(value, bit) ((value) |= (1UL << (bit)))
-#define bitClear(value, bit) ((value) &= ~(1UL << (bit)))
-#define bitWrite(value, bit, bitvalue) ((bitvalue) ? bitSet(value, bit) : bitClear(value, bit))
+#include <u8g2.h>
+#include "sdkconfig.h"
+#include "u8g2_esp32_hal.h"
 
 // LCD Control Pins
 #define SPI_MISO_PIN 19
@@ -23,78 +22,46 @@
 // LCD Backlight
 #define LCD_BL_PIN 13
 
-// I2C bus
-// Connected to ADXL345
-#define I2C_SDA_PIN 21
-#define I2C_SCL_PIN 22
-#define I2C_FREQ_HZ 100000
-// I2C slave addresses
-#define ADXL345_ADDR 0x53 // Accelerometer
-
-void i2c_master_init(void)
-{
-  i2c_config_t i2c_config = {
-      .mode = I2C_MODE_MASTER,
-      .sda_io_num = I2C_SDA_PIN,
-      .scl_io_num = I2C_SCL_PIN,
-      .sda_pullup_en = GPIO_PULLUP_ENABLE,
-      .scl_pullup_en = GPIO_PULLUP_ENABLE,
-      .master.clk_speed = I2C_FREQ_HZ,
-  };
-
-  i2c_param_config(I2C_NUM_0, &i2c_config);
-  i2c_driver_install(I2C_NUM_0, i2c_config.mode, 0, 0, 0);
-}
-
-void adxl345_init(void)
-{
-  uint8_t buff[2];
-  // Turning on ADXL345
-  buff[0] = 0x2D; // reg
-  buff[1] = 0x08; // val
-  i2c_master_write_to_device(I2C_NUM_0, ADXL345_ADDR, buff, 2, pdMS_TO_TICKS(100));
-  buff[0] = 0x31;
-  buff[1] = 0x0B;
-  i2c_master_write_to_device(I2C_NUM_0, ADXL345_ADDR, buff, 2, pdMS_TO_TICKS(100));
-  buff[0] = 0x2C;
-  buff[1] = 0x09;
-  i2c_master_write_to_device(I2C_NUM_0, ADXL345_ADDR, buff, 2, pdMS_TO_TICKS(100));
-}
-
-void adxl345_get_accel(int16_t *result)
-{
-  uint8_t regAddress = 0x32;
-  uint8_t buff[6];
-  i2c_master_write_read_device(I2C_NUM_0, ADXL345_ADDR, &regAddress, 1, buff, 6, pdMS_TO_TICKS(100));
-  result[0] = (((int)buff[1]) << 8) | buff[0];
-  result[1] = (((int)buff[3]) << 8) | buff[2];
-  result[2] = (((int)buff[5]) << 8) | buff[4];
-}
-
-//************ Tasks ************
-
-//************ Main ************
-
 void app_main(void)
 {
   vTaskDelay(pdMS_TO_TICKS(1000));
   printf("--- Hello World! ---\r\n");
 
-  int16_t accel[3];
+  u8g2_esp32_hal_t u8g2_esp32_hal = U8G2_ESP32_HAL_DEFAULT;
+  u8g2_esp32_hal.clk = SPI_CLK_PIN;
+  u8g2_esp32_hal.mosi = SPI_MOSI_PIN;
+  u8g2_esp32_hal.cs = LCD_CS_PIN;
+  u8g2_esp32_hal.dc = LCD_DC_PIN;
+  u8g2_esp32_hal.reset = LCD_RST_PIN;
+  u8g2_esp32_hal_init(u8g2_esp32_hal);
 
-  i2c_master_init();
-  adxl345_init();
+  u8g2_t u8g2; // a structure which will contain all the data for one display
+  u8g2_Setup_uc1701_mini12864_1(
+      &u8g2,
+      U8G2_R0,
+      u8g2_esp32_spi_byte_cb,
+      u8g2_esp32_gpio_and_delay_cb); // init u8g2 structure
+
+  u8g2_InitDisplay(&u8g2); // send init sequence to the display, display is in
+                           // sleep mode after this,
+
+  // Turn on backlight
+  gpio_reset_pin(LCD_BL_PIN);
+  gpio_set_direction(LCD_BL_PIN, GPIO_MODE_OUTPUT);
+  gpio_set_level(LCD_BL_PIN, 1);
+
+  u8g2_SetPowerSave(&u8g2, 0);  // Wake up display
+  u8g2_SetContrast(&u8g2, 255); // Set contrast ( important!!! )
+  u8g2_ClearBuffer(&u8g2);
+  u8g2_DrawBox(&u8g2, 10, 20, 20, 30);
+  u8g2_SetFont(&u8g2, u8g2_font_ncenB14_tr);
+  u8g2_DrawStr(&u8g2, 0, 15, "Hello World!");
+  u8g2_SendBuffer(&u8g2);
+
+  ESP_LOGI("u8g2", "All done!");
 
   while (1)
   {
-
-    printf("---------------------\r\n");
-
-    adxl345_get_accel(accel);
-    printf("accel[x]: %+.1fg\r\n", (float)accel[0] / 255);
-    printf("accel[y]: %+.1fg\r\n", (float)accel[1] / 255);
-    printf("accel[z]: %+.1fg\r\n", (float)accel[2] / 255);
-
-    vTaskDelay(pdMS_TO_TICKS(100));
+    vTaskDelay(pdMS_TO_TICKS(10));
   }
 }
