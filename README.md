@@ -87,3 +87,6 @@ pio run -t menuconfig
 - [uxTaskGetStackHighWaterMark](https://www.freertos.org/uxTaskGetStackHighWaterMark.html)
 - [Stop boot rom logs , panic handler logs on UART 0 on Esp-Wroom-32](https://github.com/espressif/esp-idf/issues/4836)
 - [Why is volatile needed in C?](https://stackoverflow.com/questions/246127/why-is-volatile-needed-in-c)
+- [ESP32 as I2C Master Tutorial (ESP-IDF)](https://embeddedexplorer.com/esp32-i2c-tutorial/)
+- [How To Track Orientation with Arduino and ADXL345 Accelerometer](https://howtomechatronics.com/tutorials/arduino/how-to-track-orientation-with-arduino-and-adxl345-accelerometer/)
+- [esp32-i2c-adxl345](https://github.com/imxieyi/esp32-i2c-adxl345)
