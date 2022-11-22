@@ -81,7 +81,7 @@ uint8_t u8g2_esp32_spi_byte_cb(u8x8_t *u8x8,
     dev_config.duty_cycle_pos = 0;
     dev_config.cs_ena_posttrans = 0;
     dev_config.cs_ena_pretrans = 0;
-    dev_config.clock_speed_hz = 10000;
+    dev_config.clock_speed_hz = 1000000; // 1 MHz
     dev_config.spics_io_num = u8g2_esp32_hal.cs;
     dev_config.flags = 0;
     dev_config.queue_size = 200;

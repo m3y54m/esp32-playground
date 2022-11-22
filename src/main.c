@@ -164,25 +164,26 @@ void app_main(void)
   u8g2_SetPowerSave(&u8g2, 0);  // Wake up display
   u8g2_SetContrast(&u8g2, 255); // Set contrast ( important!!! )
 
-  // Clear the u8g2 buffer
-  u8g2_ClearBuffer(&u8g2);
-
-  u8g2_SetFont(&u8g2, font_pixia_10_fa);
-  u8g2_DrawUTF8(&u8g2, 62, 10, "ﻡﻼﺳ");
-  u8g2_DrawButtonUTF8(&u8g2, 64, 61, U8G2_BTN_INV | U8G2_BTN_HCENTER | U8G2_BTN_BW0, 128, 0, 2, "ﻡﻼﺳ");
-
-  u8g2_SendBuffer(&u8g2);
-
-  ESP_LOGI("u8g2", "All done!");
-
-  uint32_t voltage;
-
-  adc_init();
+  bool toggle = 0;
 
   while (1)
   {
-    voltage = esp_adc_cal_raw_to_voltage(adc1_get_raw(ADC1_CHANNEL_0), &adc1_chars);
-    ESP_LOGI("adc", "TIMER: %d , ADC1_CHANNEL_0: %d mV", (int)(esp_timer_get_time() / 1000ULL), voltage);
-    vTaskDelay(pdMS_TO_TICKS(100));
+    u8g2_ClearBuffer(&u8g2);
+    u8g2_SetFont(&u8g2, font_pixia_10_fa);
+    if (toggle)
+    {
+      u8g2_DrawUTF8(&u8g2, 58, 10, "ﻡﻼﺳ");
+      u8g2_DrawButtonUTF8(&u8g2, 64, 60, U8G2_BTN_INV | U8G2_BTN_HCENTER | U8G2_BTN_BW0, 128, 0, 2, "ﻡﻼﺳ");
+    }
+    else
+    {
+      u8g2_DrawUTF8(&u8g2, 58, 60, "ﻡﻼﺳ");
+      u8g2_DrawButtonUTF8(&u8g2, 64, 10, U8G2_BTN_INV | U8G2_BTN_HCENTER | U8G2_BTN_BW0, 128, 0, 2, "ﻡﻼﺳ");
+    }
+    u8g2_SendBuffer(&u8g2);
+
+    toggle = !toggle;
+
+    vTaskDelay(pdMS_TO_TICKS(1000));
   }
 }
