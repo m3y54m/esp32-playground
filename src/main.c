@@ -9,6 +9,8 @@
 #include <freertos/semphr.h>
 #include <driver/adc.h>
 #include <esp_adc_cal.h>
+#include <esp_timer.h>
+
 
 #include <u8g2.h>
 #include <u8g2_esp32_hal.h>
@@ -78,7 +80,7 @@ void app_main(void)
   while (1)
   {
     voltage = esp_adc_cal_raw_to_voltage(adc1_get_raw(ADC1_CHANNEL_0), &adc1_chars);
-    ESP_LOGI("adc", "ADC1_CHANNEL_0: %d mV", voltage);
+    ESP_LOGI("adc", "TIMER: %d , ADC1_CHANNEL_0: %d mV", (int)(esp_timer_get_time() / 1000ULL), voltage);
     vTaskDelay(pdMS_TO_TICKS(100));
   }
 }
