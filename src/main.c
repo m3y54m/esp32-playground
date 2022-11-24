@@ -27,6 +27,15 @@ void app_main(void)
     ESP_LOGI("TAG", "Initialization failed!");
   }
 
+  uint8_t address[4][8] = {0};
+  uint8_t numOfDevices = 0;
+
+  while (ds18b20_search_ROM(address[numOfDevices]) == true)
+  {
+    numOfDevices++;
+    ESP_LOGI("TAG", "Found address number %d.", numOfDevices);
+  }
+
   float temperature;
 
   while (1)
