@@ -17,6 +17,7 @@
     "spi_master.h": "c",
     "esp_adc_cal.h": "c",
     "adc.h": "c",
-    "esp_timer.h": "c"
+    "esp_timer.h": "c",
+    "ds18b20.h": "c"
   }
 }

@@ -92,3 +92,11 @@ pio run -t menuconfig
 - [esp32-i2c-adxl345](https://github.com/imxieyi/esp32-i2c-adxl345)
 - [ESP-IDF components](https://docs.platformio.org/en/latest/frameworks/espidf.html#esp-idf-components)
 - [Measuring analog inputs with ESP32 ADC (ESP-IDF)](https://embeddedexplorer.com/esp32-adc-esp-idf-tutorial/)
+
+### 1-Wire
+
+- [onewire - Bit-banging one wire driver](https://esp-idf-lib.readthedocs.io/en/latest/groups/onewire.html)
+- [onewire](https://github.com/UncleRus/esp-idf-lib/tree/master/components/onewire)
+- [ds18x20 - Driver for DS18B20/DS18S20](https://esp-idf-lib.readthedocs.io/en/latest/groups/ds18x20.html)
+- [ds18x20](https://github.com/UncleRus/esp-idf-lib/tree/master/components/ds18x20)
+- [matjazv / ds18b20](https://github.com/matjazv/ds18b20)
