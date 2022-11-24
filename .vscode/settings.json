@@ -18,6 +18,7 @@
     "esp_adc_cal.h": "c",
     "adc.h": "c",
     "esp_timer.h": "c",
-    "ds18b20.h": "c"
+    "ds18b20.h": "c",
+    "ds18x20.h": "c"
   }
 }
