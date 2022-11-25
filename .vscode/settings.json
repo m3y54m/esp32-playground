@@ -19,6 +19,12 @@
     "adc.h": "c",
     "esp_timer.h": "c",
     "ds18b20.h": "c",
-    "ds18x20.h": "c"
+    "ds18x20.h": "c",
+    "spi_flash.h": "c",
+    "esp_spi_flash.h": "c",
+    "inttypes.h": "c",
+    "esp_vfs_fat.h": "c",
+    "esp_flash_spi_init.h": "c",
+    "esp_vfs.h": "c"
   }
 }

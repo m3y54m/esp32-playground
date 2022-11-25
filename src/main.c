@@ -1,103 +1,203 @@
+#include <freertos/FreeRTOS.h>
+#include <freertos/semphr.h>
+#include <freertos/task.h>
 #include <driver/gpio.h>
 #include <driver/uart.h>
 #include <driver/i2c.h>
-#include <freertos/FreeRTOS.h>
-#include <freertos/task.h>
-#include <string.h>
-#define LOG_LOCAL_LEVEL ESP_LOG_VERBOSE
-#include <esp_log.h>
-#include <freertos/semphr.h>
 #include <driver/adc.h>
 #include <esp_adc_cal.h>
 #include <esp_timer.h>
-
-#include <inttypes.h>
-#include <ds18x20.h>
+#define LOG_LOCAL_LEVEL ESP_LOG_VERBOSE
+#include <esp_log.h>
 #include <esp_err.h>
 
-static const gpio_num_t SENSOR_GPIO = 33;
-static const int MAX_SENSORS = 1;
-static const int RESCAN_INTERVAL = 8;
-static const uint32_t LOOP_DELAY_MS = 500;
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <inttypes.h>
 
-static const char *TAG = "ds18x20_test";
+// SPI flash
+#include "esp_flash.h"
+#include "esp_flash_spi_init.h"
+#include "esp_partition.h"
+#include "esp_vfs.h"
+#include "esp_vfs_fat.h"
+#include "esp_system.h"
+#include "soc/spi_pins.h"
 
-void ds18x20_test(void *pvParameter)
+// h4 and c2 will not support external flash
+#define EXAMPLE_FLASH_FREQ_MHZ 40
+
+static const char *TAG = "example";
+
+// Pin mapping
+#define HOST_ID SPI2_HOST
+#define PIN_MOSI 23
+#define PIN_MISO 19
+#define PIN_CLK 18
+#define PIN_CS 33
+#define PIN_WP -1 // Not used
+#define PIN_HD -1 // Not used
+#define SPI_DMA_CHAN SPI_DMA_CH_AUTO
+
+// Handle of the wear levelling library instance
+static wl_handle_t s_wl_handle = WL_INVALID_HANDLE;
+
+// Mount path for the partition
+const char *base_path = "/extflash";
+
+static esp_flash_t *example_init_ext_flash(void);
+static const esp_partition_t *example_add_partition(esp_flash_t *ext_flash, const char *partition_label);
+static void example_list_data_partitions(void);
+static bool example_mount_fatfs(const char *partition_label);
+
+void app_main(void)
 {
-    ds18x20_addr_t addrs[MAX_SENSORS];
-    float temps[MAX_SENSORS];
-    size_t sensor_count = 0;
+    // Set up SPI bus and initialize the external SPI Flash chip
+    esp_flash_t *flash = example_init_ext_flash();
+    if (flash == NULL)
+    {
+        return;
+    }
 
-    // There is no special initialization required before using the ds18x20
-    // routines.  However, we make sure that the internal pull-up resistor is
-    // enabled on the GPIO pin so that one can connect up a sensor without
-    // needing an external pull-up (Note: The internal (~47k) pull-ups of the
-    // ESP do appear to work, at least for simple setups (one or two sensors
-    // connected with short leads), but do not technically meet the pull-up
-    // requirements from the ds18x20 datasheet and may not always be reliable.
-    // For a real application, a proper 4.7k external pull-up resistor is
-    // recommended instead!)
-    gpio_set_pull_mode(SENSOR_GPIO, GPIO_PULLUP_ONLY);
+    // Add the entire external flash chip as a partition
+    const char *partition_label = "storage";
+    example_add_partition(flash, partition_label);
 
-    esp_err_t res;
+    // List the available partitions
+    example_list_data_partitions();
+
+    // Initialize FAT FS in the partition
+    if (!example_mount_fatfs(partition_label))
+    {
+        return;
+    }
+
+    // Create a file in FAT FS
+    ESP_LOGI(TAG, "Opening file");
+    FILE *f = fopen("/extflash/hello.txt", "wb");
+    if (f == NULL)
+    {
+        ESP_LOGE(TAG, "Failed to open file for writing");
+        return;
+    }
+    fprintf(f, "Written using ESP-IDF %s\n", esp_get_idf_version());
+    fclose(f);
+    ESP_LOGI(TAG, "File written");
+
+    // Open file for reading
+    ESP_LOGI(TAG, "Reading file");
+    f = fopen("/extflash/hello.txt", "rb");
+    if (f == NULL)
+    {
+        ESP_LOGE(TAG, "Failed to open file for reading");
+        return;
+    }
+    char line[128];
+    fgets(line, sizeof(line), f);
+    fclose(f);
+    // strip newline
+    char *pos = strchr(line, '\n');
+    if (pos)
+    {
+        *pos = '\0';
+    }
+    ESP_LOGI(TAG, "Read from file: '%s'", line);
+
     while (1)
     {
-        // Every RESCAN_INTERVAL samples, check to see if the sensors connected
-        // to our bus have changed.
-        res = ds18x20_scan_devices(SENSOR_GPIO, addrs, MAX_SENSORS, &sensor_count);
-        if (res != ESP_OK)
-        {
-            ESP_LOGE(TAG, "Sensors scan error %d (%s)", res, esp_err_to_name(res));
-            continue;
-        }
-
-        if (!sensor_count)
-        {
-            ESP_LOGW(TAG, "No sensors detected!");
-            continue;
-        }
-
-        ESP_LOGI(TAG, "%d sensors detected", sensor_count);
-
-        // If there were more sensors found than we have space to handle,
-        // just report the first MAX_SENSORS..
-        if (sensor_count > MAX_SENSORS)
-            sensor_count = MAX_SENSORS;
-
-        // Do a number of temperature samples, and print the results.
-        for (int i = 0; i < RESCAN_INTERVAL; i++)
-        {
-            ESP_LOGI(TAG, "Measuring...");
-
-            res = ds18x20_measure_and_read_multi(SENSOR_GPIO, addrs, sensor_count, temps);
-            if (res != ESP_OK)
-            {
-                ESP_LOGE(TAG, "Sensors read error %d (%s)", res, esp_err_to_name(res));
-                continue;
-            }
-
-            for (int j = 0; j < sensor_count; j++)
-            {
-                float temp_c = temps[j];
-                float temp_f = (temp_c * 1.8) + 32;
-                // Float is used in printf(). You need non-default configuration in
-                // sdkconfig for ESP8266, which is enabled by default for this
-                // example. See sdkconfig.defaults.esp8266
-                ESP_LOGI(TAG, "Sensor %08" PRIx32 "%08" PRIx32 " (%s) reports %.3f°C (%.3f°F)",
-                        (uint32_t)(addrs[j] >> 32), (uint32_t)addrs[j],
-                        (addrs[j] & 0xff) == DS18B20_FAMILY_ID ? "DS18B20" : "DS18S20",
-                        temp_c, temp_f);
-            }
-
-            // Wait for a little bit between each sample (note that the
-            // ds18x20_measure_and_read_multi operation already takes at
-            // least 750ms to run, so this is on top of that delay).
-            vTaskDelay(pdMS_TO_TICKS(LOOP_DELAY_MS));
-        }
+        vTaskDelay(pdMS_TO_TICKS(100));
     }
 }
 
-void app_main()
+static esp_flash_t *example_init_ext_flash(void)
 {
-    xTaskCreate(ds18x20_test, "ds18x20_test", configMINIMAL_STACK_SIZE * 4, NULL, 5, NULL);
+    const spi_bus_config_t bus_config = {
+        .mosi_io_num = PIN_MOSI,
+        .miso_io_num = PIN_MISO,
+        .sclk_io_num = PIN_CLK,
+        .quadhd_io_num = PIN_HD,
+        .quadwp_io_num = PIN_WP,
+    };
+
+    const esp_flash_spi_device_config_t device_config = {
+        .host_id = HOST_ID,
+        .cs_id = 0,
+        .cs_io_num = PIN_CS,
+        .io_mode = SPI_FLASH_FASTRD,
+        .speed = ESP_FLASH_40MHZ,
+    };
+
+    ESP_LOGI(TAG, "Initializing external SPI Flash");
+    ESP_LOGI(TAG, "Pin assignments:");
+    ESP_LOGI(TAG, "MOSI: %2d   MISO: %2d   SCLK: %2d   CS: %2d",
+             bus_config.mosi_io_num, bus_config.miso_io_num,
+             bus_config.sclk_io_num, device_config.cs_io_num);
+
+    // Initialize the SPI bus
+    ESP_LOGI(TAG, "DMA CHANNEL: %d", SPI_DMA_CHAN);
+    ESP_ERROR_CHECK(spi_bus_initialize(HOST_ID, &bus_config, SPI_DMA_CHAN));
+
+    // Add device to the SPI bus
+    esp_flash_t *ext_flash;
+    ESP_ERROR_CHECK(spi_bus_add_flash_device(&ext_flash, &device_config));
+
+    // Probe the Flash chip and initialize it
+    esp_err_t err = esp_flash_init(ext_flash);
+    if (err != ESP_OK)
+    {
+        ESP_LOGE(TAG, "Failed to initialize external Flash: %s (0x%x)", esp_err_to_name(err), err);
+        return NULL;
+    }
+
+    // Print out the ID and size
+    uint32_t id;
+    ESP_ERROR_CHECK(esp_flash_read_id(ext_flash, &id));
+    ESP_LOGI(TAG, "Initialized external Flash, size=%" PRIu32 " KB, ID=0x%" PRIx32, ext_flash->size / 1024, id);
+
+    return ext_flash;
+}
+
+static const esp_partition_t *example_add_partition(esp_flash_t *ext_flash, const char *partition_label)
+{
+    ESP_LOGI(TAG, "Adding external Flash as a partition, label=\"%s\", size=%" PRIu32 " KB", partition_label, ext_flash->size / 1024);
+    const esp_partition_t *fat_partition;
+    const size_t offset = 0;
+    ESP_ERROR_CHECK(esp_partition_register_external(ext_flash, offset, ext_flash->size, partition_label, ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_FAT, &fat_partition));
+
+    // Erase space of partition on the external flash chip
+    ESP_LOGI(TAG, "Erasing partition range, offset=%u size=%" PRIu32 " KB", offset, ext_flash->size / 1024);
+    ESP_ERROR_CHECK(esp_partition_erase_range(fat_partition, offset, ext_flash->size));
+    return fat_partition;
+}
+
+static void example_list_data_partitions(void)
+{
+    ESP_LOGI(TAG, "Listing data partitions:");
+    esp_partition_iterator_t it = esp_partition_find(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_ANY, NULL);
+
+    for (; it != NULL; it = esp_partition_next(it))
+    {
+        const esp_partition_t *part = esp_partition_get(it);
+        ESP_LOGI(TAG, "- partition '%s', subtype %d, offset 0x%" PRIx32 ", size %" PRIu32 " kB",
+                 part->label, part->subtype, part->address, part->size / 1024);
+    }
+
+    esp_partition_iterator_release(it);
+}
+
+static bool example_mount_fatfs(const char *partition_label)
+{
+    ESP_LOGI(TAG, "Mounting FAT filesystem");
+    const esp_vfs_fat_mount_config_t mount_config = {
+        .max_files = 4,
+        .format_if_mount_failed = true,
+        .allocation_unit_size = CONFIG_WL_SECTOR_SIZE};
+    esp_err_t err = esp_vfs_fat_spiflash_mount(base_path, partition_label, &mount_config, &s_wl_handle);
+    if (err != ESP_OK)
+    {
+        ESP_LOGE(TAG, "Failed to mount FATFS (%s)", esp_err_to_name(err));
+        return false;
+    }
+    return true;
 }

@@ -100,3 +100,20 @@ pio run -t menuconfig
 - [ds18x20 - Driver for DS18B20/DS18S20](https://esp-idf-lib.readthedocs.io/en/latest/groups/ds18x20.html)
 - [ds18x20](https://github.com/UncleRus/esp-idf-lib/tree/master/components/ds18x20)
 - [matjazv / ds18b20](https://github.com/matjazv/ds18b20)
+
+### SPI
+
+- [SPI master half duplex EEPROM example](https://github.com/espressif/esp-idf/tree/master/examples/peripherals/spi_master/hd_eeprom)
+- [SPI Flash API](https://docs.espressif.com/projects/esp-idf/en/v4.4.3/esp32/api-reference/storage/spi_flash.html)
+
+### File Systems
+
+- [FAT FS on External Flash example](https://github.com/espressif/esp-idf/tree/master/examples/storage/ext_flash_fatfs)
+- [SPIFFS file system limitations](https://arduino-esp8266.readthedocs.io/en/latest/filesystem.html#spiffs-file-system-limitations)
+- [SPIFFS (SPI Flash File System)](https://github.com/pellepl/spiffs)
+- [LittleFS](https://github.com/littlefs-project/littlefs)
+- [SPIFFS Filesystem](https://docs.espressif.com/projects/esp-idf/en/v4.4.3/esp32/api-reference/storage/spiffs.html)
+- [FAT Filesystem Support](https://docs.espressif.com/projects/esp-idf/en/v4.4.3/esp32/api-reference/storage/fatfs.html)
+- [Wear Levelling API](https://docs.espressif.com/projects/esp-idf/en/v4.4.3/esp32/api-reference/storage/wear-levelling.html)
+- [Virtual filesystem component](https://docs.espressif.com/projects/esp-idf/en/v4.4.3/esp32/api-reference/storage/vfs.html)
+- [How to work on SPIFFS in ESP32 using ESP-IDF](https://www.youtube.com/watch?v=de44PvCmVVg)
