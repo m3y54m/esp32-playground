@@ -119,3 +119,8 @@ pio run -t menuconfig
 - [Wear Levelling API](https://docs.espressif.com/projects/esp-idf/en/v4.4.3/esp32/api-reference/storage/wear-levelling.html)
 - [Virtual filesystem component](https://docs.espressif.com/projects/esp-idf/en/v4.4.3/esp32/api-reference/storage/vfs.html)
 - [How to work on SPIFFS in ESP32 using ESP-IDF](https://www.youtube.com/watch?v=de44PvCmVVg)
+
+### SPIFFS
+
+- [SPIFFS example](https://github.com/espressif/esp-idf/tree/master/examples/storage/spiffs)
+- [Create a custom partitions table (CSV) in PIO](https://docs.platformio.org/en/latest/platforms/espressif32.html#id19)
