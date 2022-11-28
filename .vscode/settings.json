@@ -25,6 +25,10 @@
     "inttypes.h": "c",
     "esp_vfs_fat.h": "c",
     "esp_flash_spi_init.h": "c",
-    "esp_vfs.h": "c"
+    "esp_vfs.h": "c",
+    "string_view": "c",
+    "random": "c",
+    "esp_err.h": "c",
+    "spiflash.h": "c"
   }
 }

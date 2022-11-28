@@ -103,6 +103,8 @@ pio run -t menuconfig
 
 ### SPI
 
+- [ESP32 SPI Master (ESP-IDF)](https://embeddedexplorer.com/esp32-spi-master/)
+- [ESP32 SPI Master Slave Communication with ESP-IDF](https://esp32tutorials.com/esp32-spi-master-slave-communication-esp-idf/)
 - [SPI master half duplex EEPROM example](https://github.com/espressif/esp-idf/tree/master/examples/peripherals/spi_master/hd_eeprom)
 - [SPI Flash API](https://docs.espressif.com/projects/esp-idf/en/v4.4.3/esp32/api-reference/storage/spi_flash.html)
 
