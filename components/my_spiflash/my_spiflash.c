@@ -1,7 +1,7 @@
 /************************************************
     W25Q64FV Flash Memory is connected to SPI2
  ************************************************/
-#include "spiflash.h"
+#include "my_spiflash.h"
 #include <stdint.h>
 
 void SPI2_Initialize()

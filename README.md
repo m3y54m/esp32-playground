@@ -124,3 +124,4 @@ pio run -t menuconfig
 
 - [SPIFFS example](https://github.com/espressif/esp-idf/tree/master/examples/storage/spiffs)
 - [Create a custom partitions table (CSV) in PIO](https://docs.platformio.org/en/latest/platforms/espressif32.html#id19)
+- [Creating Custom Tables (ESP-IDF)](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-guides/partition-tables.html#creating-custom-tables)
